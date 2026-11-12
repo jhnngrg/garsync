@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GarSync – Privacy Policy</title>
+    <meta name="description" content="Privacy policy of the GarSync extension for Google Chrome." />
+    <style>
+      :root {
+        --text: #0b1f35;
+        --muted: #4d5f73;
+        --accent: #16395f;
+        --line: #e3e8ee;
+        --bg: #ffffff;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --text: #e9eef4;
+          --muted: #a9b6c4;
+          --accent: #8fb8e6;
+          --line: #2a3a4c;
+          --bg: #0e1a27;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.6 Arial, Helvetica, sans-serif;
+      }
+      main { max-width: 720px; margin: 0 auto; padding: 48px 16px 64px; }
+      h1 { font-size: 28px; line-height: 1.25; margin: 0 0 8px; }
+      h2 { font-size: 19px; margin: 32px 0 8px; }
+      .muted { color: var(--muted); }
+      a { color: var(--accent); }
+      ul { padding-left: 20px; }
+      code { font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>GarSync – Privacy Policy</h1>
+      <p class="muted">Effective November 12, 2026 · extension version 1.0.0</p>
+
+      <p>
+        GarSync is a Google Chrome extension that sends a route planned on Mapy.com to your own Garmin Connect account
+        and your Garmin devices. This policy describes the data the extension works with.
+      </p>
+
+      <h2>In short</h2>
+      <ul>
+        <li>The extension has no server of its own and sends no data to its author.</li>
+        <li>Data is never sold, shared with third parties, or used for advertising or analytics.</li>
+        <li>Data is processed in your browser and only sent to your own Garmin Connect account when you click Send.</li>
+      </ul>
+
+      <h2>Data the extension works with</h2>
+      <ul>
+        <li>
+          <strong>The Mapy.com route you have open.</strong> Its coordinates and name are downloaded as GPX through
+          Mapy.com's export and, when you click Send, uploaded to your Garmin Connect account as a private course.
+        </li>
+        <li>
+          <strong>Your Garmin Connect display name.</strong> Shown in the dialog only, so you can see which account is
+          connected. It is never stored.
+        </li>
+        <li>
+          <strong>Your list of Garmin devices.</strong> Loaded so you can choose where to send the course.
+        </li>
+        <li>
+          <strong>Your device selection.</strong> The IDs of the devices you selected last time are stored locally in
+          the browser (<code>chrome.storage.local</code>) so the dialog can pre-select them. They are removed when you
+          uninstall the extension.
+        </li>
+      </ul>
+
+      <h2>Sign-in</h2>
+      <p>
+        The extension never sees or stores your password. Garmin Connect requests run inside a connect.garmin.com page
+        using the session you already have in your browser, just like when you use the Garmin Connect website.
+      </p>
+
+      <h2>Who receives data</h2>
+      <p>
+        Only the services the extension is built for: <strong>Mapy.com</strong> (to download the route you have open)
+        and <strong>Garmin Connect</strong> (to upload it to your account). Their processing is governed by the privacy
+        policies of <a href="https://www.seznam.cz/ochranaudaju" rel="noopener">Seznam.cz</a> and
+        <a href="https://www.garmin.com/privacy/connect/" rel="noopener">Garmin</a>. Nobody else receives any data.
+      </p>
+
+      <h2>Permissions</h2>
+      <ul>
+        <li><code>storage</code> – remembers your device selection.</li>
+        <li><code>mapy.com</code>, <code>mapy.cz</code> – adds the Garmin button to the route panel and reads the open route.</li>
+        <li><code>connect.garmin.com</code> – uploads the course to your account and loads your name and devices.</li>
+      </ul>
+
+      <h2>Changes</h2>
+      <p>If this policy changes, this page and the date above will be updated.</p>
+
+      <h2>Contact</h2>
+      <p>Questions or requests: open an issue at <a href="https://github.com/jhnngrg/garsync/issues" rel="noopener">github.com/jhnngrg/garsync/issues</a>.</p>
+
+      <p class="muted">
+        GarSync is an unofficial add-on, not made or endorsed by Garmin Ltd. or Seznam.cz, a.s. Garmin and Garmin
+        Connect are trademarks of Garmin Ltd. or its subsidiaries.
+      </p>
+    </main>
+  </body>
+</html>

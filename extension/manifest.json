@@ -1,0 +1,70 @@
+{
+  "manifest_version": 3,
+  "name": "GarSync – Send Mapy.com routes to Garmin",
+  "short_name": "GarSync",
+  "version": "1.0.0",
+  "description": "Send a route from Mapy.com to Garmin Connect and your Garmin watch or bike computer in one click. Unofficial add-on.",
+  "minimum_chrome_version": "111",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Send route to Garmin",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://mapy.com/*",
+    "https://*.mapy.com/*",
+    "https://mapy.cz/*",
+    "https://*.mapy.cz/*",
+    "https://connect.garmin.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://mapy.com/*",
+        "https://*.mapy.com/*",
+        "https://mapy.cz/*",
+        "https://*.mapy.cz/*"
+      ],
+      "js": [
+        "content/mapy-bridge.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://mapy.com/*",
+        "https://*.mapy.com/*",
+        "https://mapy.cz/*",
+        "https://*.mapy.cz/*"
+      ],
+      "js": [
+        "lib/mapy-route.js",
+        "content/mapy.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://connect.garmin.com/*"
+      ],
+      "js": [
+        "content/garmin.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
