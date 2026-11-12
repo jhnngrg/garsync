@@ -22,7 +22,8 @@
     "service_worker": "background.js"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "declarativeNetRequestWithHostAccess"
   ],
   "host_permissions": [
     "https://mapy.com/*",
@@ -63,6 +64,7 @@
         "https://connect.garmin.com/*"
       ],
       "js": [
+        "lib/garmin-api.js",
         "content/garmin.js"
       ],
       "run_at": "document_idle"

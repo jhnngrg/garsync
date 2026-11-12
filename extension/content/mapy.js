@@ -268,6 +268,12 @@
     .dot.off { background: rgba(1,30,57,.3); }
     .dot.error { background: #b3261e; }
     .account .btn { flex: none; }
+    /* While connecting to Garmin Connect, only the account panel stays sharp. */
+    .dialog > * { transition: filter .2s ease, opacity .2s ease; }
+    .dialog.is-connecting > :not(.account):not(.close) {
+      filter: blur(3px); opacity: .55; pointer-events: none; user-select: none;
+    }
+    @media (prefers-reduced-motion: reduce) { .dialog > * { transition: none; } }
   `;
 
   const host = document.createElement("div");
@@ -287,12 +293,64 @@
     return span.firstChild;
   }
 
+  /*
+   * When the extension is updated or reloaded, Chrome disconnects the content
+   * scripts already running in open tabs: chrome.runtime disappears and calls
+   * throw "Extension context invalidated". The page then has to be reloaded.
+   */
+  function extensionAlive() {
+    try {
+      return Boolean(chrome?.runtime?.id);
+    } catch {
+      return false;
+    }
+  }
+
+  function reloadedError() {
+    return Object.assign(new Error("GarSync was updated. Reload this page to continue."), { code: "EXTENSION_RELOADED" });
+  }
+
+  function asReloaded(err) {
+    return !extensionAlive() || /context invalidated/i.test(String(err?.message || err)) ? reloadedError() : err;
+  }
+
   function send(type, payload) {
-    return chrome.runtime.sendMessage({ target: "background", type, payload }).then((res) => {
-      if (!res) throw new Error("The extension did not respond. Reload the page and try again.");
-      if (!res.ok) throw Object.assign(new Error(res.error), { code: res.code });
-      return res.data;
-    });
+    if (!extensionAlive()) return Promise.reject(reloadedError());
+    let request;
+    try {
+      request = chrome.runtime.sendMessage({ target: "background", type, payload });
+    } catch (err) {
+      return Promise.reject(asReloaded(err));
+    }
+    return request.then(
+      (res) => {
+        if (!res) throw new Error("The extension did not respond. Reload the page and try again.");
+        if (!res.ok) throw Object.assign(new Error(res.error), { code: res.code });
+        return res.data;
+      },
+      (err) => {
+        throw asReloaded(err);
+      },
+    );
+  }
+
+  /** chrome.storage.local that survives a disconnected extension. */
+  async function storageGet(key) {
+    if (!extensionAlive()) throw reloadedError();
+    try {
+      return (await chrome.storage.local.get(key))[key];
+    } catch (err) {
+      throw asReloaded(err);
+    }
+  }
+
+  async function storageSet(values) {
+    if (!extensionAlive()) throw reloadedError();
+    try {
+      await chrome.storage.local.set(values);
+    } catch (err) {
+      throw asReloaded(err);
+    }
   }
 
   function formatKm(km) {
@@ -410,6 +468,11 @@
 
     const renderAccount = (state, data) => {
       accountState = state;
+      const connecting = state === "loading";
+      dialog.classList.toggle("is-connecting", connecting);
+      for (const child of dialog.children) {
+        if (child !== account && child !== closeBtn) child.inert = connecting;
+      }
       let avatar;
       let name;
       let sub;
@@ -432,10 +495,16 @@
           send("openLogin").catch(() => {});
           account.querySelector(".account-sub").lastChild.textContent = "Garmin Connect · come back here after signing in";
         });
+      } else if (state === "reloaded") {
+        avatar = el("div", { className: "avatar muted" }, svg(ICON_PERSON));
+        name = el("div", { className: "account-name", textContent: "GarSync was updated" });
+        sub = el("div", { className: "account-sub" }, el("span", { className: "dot off" }), "Reload this page to continue.");
+        action = el("button", { className: "btn primary", type: "button", textContent: "Reload page" });
+        action.addEventListener("click", () => location.reload());
       } else if (state === "error") {
         avatar = el("div", { className: "avatar muted" }, svg(ICON_PERSON));
         name = el("div", { className: "account-name", textContent: "Connection error" });
-        sub = el("div", { className: "account-sub" }, el("span", { className: "dot error" }), data || "Zkus to znovu.");
+        sub = el("div", { className: "account-sub" }, el("span", { className: "dot error" }), data || "Please try again.");
         action = el("button", { className: "btn secondary", type: "button", textContent: "Try again" });
         action.addEventListener("click", () => loadAccount());
       } else {
@@ -460,7 +529,9 @@
             textContent:
               accountState === "loggedOut"
                 ? "Your devices will show up here after you sign in to Garmin Connect."
-                : "Could not load your devices.",
+                : accountState === "reloaded"
+                  ? "Your devices will show up here after you reload the page."
+                  : "Could not load your devices.",
           }),
         );
         return;
@@ -521,7 +592,7 @@
         const result = await send("getAccount");
         if (req !== accountRequest) return;
         devices = result.devices || [];
-        const { deviceIds: saved } = await chrome.storage.local.get("deviceIds");
+        const saved = await storageGet("deviceIds");
         selected.clear();
         for (const d of devices) {
           if (Array.isArray(saved) ? saved.includes(d.id) : d.primary || devices.length === 1) selected.add(d.id);
@@ -531,6 +602,7 @@
         if (req !== accountRequest) return;
         devices = null;
         if (err.code === "NOT_LOGGED_IN") renderAccount("loggedOut");
+        else if (err.code === "EXTENSION_RELOADED") renderAccount("reloaded");
         else renderAccount("error", err.message);
       }
       renderDevices();
@@ -598,7 +670,13 @@
         return;
       }
       const deviceIds = devices.filter((d) => selected.has(d.id)).map((d) => d.id);
-      await chrome.storage.local.set({ deviceIds });
+      try {
+        await storageSet({ deviceIds });
+      } catch (err) {
+        renderAccount("reloaded");
+        setNotice(err.message, "error");
+        return;
+      }
       busy = true;
       updateSend();
       cancelBtn.disabled = true;
@@ -621,6 +699,11 @@
           renderAccount("loggedOut");
           renderDevices();
           setNotice("Your Garmin Connect session has expired. Sign in and send the route again.", "error");
+        } else if (err.code === "EXTENSION_RELOADED") {
+          devices = null;
+          renderAccount("reloaded");
+          renderDevices();
+          setNotice(err.message, "error");
         } else {
           setNotice(err.message, "error");
         }

@@ -12,6 +12,7 @@ OUT="$DIST/garsync-$VERSION.zip"
 
 # Run the tests first so a broken build never gets packaged.
 node "$EXT/test/mapy-route.test.mjs"
+node "$EXT/test/background-modes.test.mjs"
 for f in "$EXT"/background.js "$EXT"/content/*.js "$EXT"/lib/*.js; do node --check "$f"; done
 
 mkdir -p "$DIST"

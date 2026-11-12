@@ -1,8 +1,19 @@
 /*
- * Connects the mapy.com tab with Garmin Connect. Garmin calls must run inside
- * a connect.garmin.com page (session cookies + CSRF token), so we reuse an open
- * Garmin Connect tab or open one in the background and close it again.
+ * Connects the mapy.com tab with Garmin Connect.
+ *
+ * Direct mode (preferred, no tab): this worker calls Garmin Connect itself with
+ * the user's existing session cookies and the CSRF token read from the Garmin
+ * Connect page. A session rule gives these requests the headers of Garmin's own
+ * web app, which Cloudflare in front of Garmin Connect requires.
+ *
+ * Tab mode (fallback): if direct calls do not work, the calls run inside a
+ * connect.garmin.com page instead; we reuse an open Garmin Connect tab or open
+ * one in the background and close it again.
+ *
+ * The mode is decided on the read-only account lookup, so a route is never
+ * uploaded twice: an upload only falls back if its first, non-saving step fails.
  */
+importScripts("lib/garmin-api.js");
 
 const SERVICES = {
   garmin: {
@@ -13,6 +24,103 @@ const SERVICES = {
     isLogin: (url = "") => /^https:\/\/(sso\.garmin\.com|connect\.garmin\.com\/(signin|sso))/.test(url),
   },
 };
+
+/* ---------- direct mode ---------- */
+
+const GARMIN_ORIGIN = "https://connect.garmin.com";
+const GARMIN_PAGE = `${GARMIN_ORIGIN}/modern/`;
+const CSRF_TTL_MS = 10 * 60 * 1000;
+let csrfCache = null;
+
+// Garmin Connect sits behind Cloudflare, which rejects /gc-api requests that do
+// not look like they come from its own web app (verified: 403 without these
+// headers, 200 with them). So the worker's own requests get the same Origin,
+// Referer and Sec-Fetch-* headers the Garmin Connect page sends. The rule only
+// matches /gc-api/ requests that do not come from any tab, i.e. this worker.
+async function setUpGarminHeaders() {
+  try {
+    await chrome.declarativeNetRequest.updateSessionRules({
+      removeRuleIds: [1],
+      addRules: [
+        {
+          id: 1,
+          priority: 1,
+          action: {
+            type: "modifyHeaders",
+            requestHeaders: [
+              { header: "origin", operation: "set", value: GARMIN_ORIGIN },
+              { header: "referer", operation: "set", value: GARMIN_PAGE },
+              { header: "sec-fetch-site", operation: "set", value: "same-origin" },
+              { header: "sec-fetch-mode", operation: "set", value: "cors" },
+              { header: "sec-fetch-dest", operation: "set", value: "empty" },
+            ],
+          },
+          condition: {
+            urlFilter: "|https://connect.garmin.com/gc-api/",
+            tabIds: [chrome.tabs.TAB_ID_NONE],
+            resourceTypes: ["xmlhttprequest", "other"],
+          },
+        },
+      ],
+    });
+  } catch (err) {
+    console.info("GarSync: could not set the Garmin request headers", err);
+  }
+}
+const headersReady = setUpGarminHeaders();
+
+async function fetchCsrf() {
+  if (csrfCache && Date.now() - csrfCache.at < CSRF_TTL_MS) return csrfCache.token;
+  await headersReady;
+  const res = await fetch(GARMIN_PAGE, { credentials: "include", headers: { accept: "text/html" } });
+  if (SERVICES.garmin.isLogin(res.url)) throw GarSyncGarmin.notLoggedIn();
+  const html = await res.text();
+  const match =
+    html.match(/<meta[^>]+name=["']csrf-token["'][^>]*content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]*name=["']csrf-token["']/i);
+  if (!match) {
+    throw Object.assign(new Error("No Garmin Connect session found."), { code: "UNEXPECTED_RESPONSE" });
+  }
+  csrfCache = { token: match[1], at: Date.now() };
+  return csrfCache.token;
+}
+
+const direct = GarSyncGarmin.createGarminClient({ base: `${GARMIN_ORIGIN}/gc-api`, getCsrf: fetchCsrf });
+
+async function getMode() {
+  return (await chrome.storage.session.get("garminMode")).garminMode;
+}
+
+async function setMode(mode) {
+  await chrome.storage.session.set({ garminMode: mode });
+}
+
+/** Runs a Garmin call directly, or in a Garmin Connect tab when that is needed. */
+async function garminCall(type, payload) {
+  if ((await getMode()) !== "tab") {
+    try {
+      const data = await direct[type](payload);
+      await setMode("direct");
+      return data;
+    } catch (err) {
+      const safeToRetry = type !== "uploadCourse" || err.stage === "import";
+      console.info(
+        "GarSync: direct Garmin Connect request failed:",
+        err.code || "",
+        err.message,
+        safeToRetry ? "-> using a background tab" : "",
+      );
+      if (!safeToRetry) throw err;
+      csrfCache = null;
+      const data = await callService("garmin", type, payload);
+      await setMode("tab"); // the tab worked where direct did not
+      return data;
+    }
+  }
+  return callService("garmin", type, payload);
+}
+
+/* ---------- tab mode (fallback) ---------- */
 
 async function getOpenedTabs() {
   const { openedTabs = [] } = await chrome.storage.session.get("openedTabs");
@@ -85,19 +193,24 @@ async function closeOpenedTabs() {
   }
 }
 
+/* ---------- messages from the mapy.com dialog ---------- */
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (!msg || msg.target !== "background") return false;
   const handlers = {
-    listDevices: () => callService("garmin", "listDevices"),
-    getAccount: () => callService("garmin", "getAccount"),
+    listDevices: () => garminCall("listDevices"),
+    getAccount: () => garminCall("getAccount"),
     openLogin: async () => {
+      csrfCache = null;
       const service = SERVICES[msg.payload?.service] ? msg.payload.service : "garmin";
       await chrome.tabs.create({ url: SERVICES[service].loginUrl, active: true });
     },
     uploadCourse: async () => {
-      const result = await callService("garmin", "uploadCourse", msg.payload);
-      await closeOpenedTabs();
-      return result;
+      try {
+        return await garminCall("uploadCourse", msg.payload);
+      } finally {
+        await closeOpenedTabs();
+      }
     },
     done: closeOpenedTabs,
   };

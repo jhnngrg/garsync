@@ -100,6 +100,11 @@ Sends a route planned on Mapy.com to the user's own Garmin Connect account and q
 Remembers which Garmin devices the user selected last time, so the send dialog can pre-select them. Stored locally in the browser only.
 ```
 
+**declarativeNetRequestWithHostAccess**
+```
+Sets the Origin, Referer and Sec-Fetch-* headers of the extension's background requests to the Garmin Connect API (connect.garmin.com/gc-api/) to the values the Garmin Connect website itself sends, so Garmin Connect accepts them. This lets the extension work without opening a Garmin Connect tab. The rule only matches /gc-api/ requests that do not come from any browser tab; the user's normal browsing is not touched.
+```
+
 **Host permission: https://mapy.com/\*, https://\*.mapy.com/\***
 ```
 Adds the "Garmin" button to the Mapy.com route panel and reads the route the user is viewing, then downloads its GPX through Mapy.com's own export (the same request as the site's Export button).
@@ -112,7 +117,7 @@ Mapy.cz is the former domain of Mapy.com and still serves the same route planner
 
 **Host permission: https://connect.garmin.com/\***
 ```
-Uploads the route to the user's own Garmin Connect account as a course, reads the user's display name and paired devices for the send dialog, and queues the course for the devices the user selects. Requests run inside a connect.garmin.com tab with the user's existing session; the extension never sees or stores the password.
+Uploads the route to the user's own Garmin Connect account as a course, reads the user's display name and paired devices for the send dialog, and queues the course for the devices the user selects. Requests use the user's existing Garmin Connect session (directly from the background worker, or inside a connect.garmin.com tab as a fallback); the extension never sees or stores the password.
 ```
 
 ### Are you using remote code?

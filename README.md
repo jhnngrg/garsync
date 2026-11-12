@@ -31,13 +31,13 @@ The extension remembers your device selection, so next time you just click the b
 ## How it works
 
 - **Mapy.com** (`content/mapy.js`, `content/mapy-bridge.js`, `lib/mapy-route.js`): reads the route the planner is showing (new, saved or shared) and downloads its GPX through the same export the Mapy.com Export button uses. If the page state is not available, it falls back to the points in the URL. The route type (walking, cycling, MTB…) pre-selects the Garmin sport.
-- **Garmin Connect** (`content/garmin.js`): requests run inside a connect.garmin.com page with your existing session, using the same internal endpoints as the Garmin Connect website:
+- **Garmin Connect** (`lib/garmin-api.js`): requests use your existing session and the same internal endpoints as the Garmin Connect website. The background worker calls them directly, with no extra tab; Garmin Connect is behind Cloudflare, which only accepts API requests with the headers of its own web app, so a session rule sets Origin, Referer and Sec-Fetch-* on these background requests (and only on them). If direct calls do not work, the extension falls back to running them inside a connect.garmin.com tab (`content/garmin.js`) that it opens in the background and closes again.
   0. `GET /gc-api/userprofile-service/socialProfile` and `GET /gc-api/device-service/deviceregistration/devices`: your display name and devices,
   1. `POST /gc-api/course-service/course/import`: Garmin parses the GPX,
   2. `POST /gc-api/course-service/course`: saves it as a private course,
   3. `POST /gc-api/device-service/devicemessage/messages`: queues it for your devices.
 - **Toolbar panel** (`popup/`): clicking the extension icon opens a small panel with a quick how-to, a link to Mapy.com, project links and a support button.
-- **Background** (`background.js`): connects the two pages. If Garmin Connect is not open, it opens it in a background tab and closes that tab again when done.
+- **Background** (`background.js`): connects the dialog with Garmin Connect and decides between direct mode and the tab fallback. The mode is decided on the read-only account lookup, so a route is never uploaded twice.
 
 The extension sends data nowhere else and stores nothing except your device selection (locally in Chrome).
 
@@ -67,4 +67,5 @@ See the [privacy policy](https://jhnngrg.github.io/garsync/store/privacy-policy.
 
 ```bash
 node extension/test/mapy-route.test.mjs
+node extension/test/background-modes.test.mjs
 ```

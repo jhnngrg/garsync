@@ -77,8 +77,9 @@
 
       <h2>Sign-in</h2>
       <p>
-        The extension never sees or stores your password. Garmin Connect requests run inside a connect.garmin.com page
-        using the session you already have in your browser, just like when you use the Garmin Connect website.
+        The extension never sees or stores your password. Garmin Connect requests use the session you already have in
+        your browser, just like when you use the Garmin Connect website. They are sent from the extension's background
+        worker, or, if that does not work, from a connect.garmin.com tab the extension opens in the background.
       </p>
 
       <h2>Who receives data</h2>
@@ -94,6 +95,7 @@
         <li><code>storage</code> – remembers your device selection.</li>
         <li><code>mapy.com</code>, <code>mapy.cz</code> – adds the Garmin button to the route panel and reads the open route.</li>
         <li><code>connect.garmin.com</code> – uploads the course to your account and loads your name and devices.</li>
+        <li><code>declarativeNetRequestWithHostAccess</code> – gives the extension's background requests to the Garmin Connect API the same headers the Garmin Connect website sends, so no Garmin Connect tab has to be opened. Your normal browsing is not affected.</li>
       </ul>
 
       <h2>Changes</h2>
