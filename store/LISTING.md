@@ -49,6 +49,7 @@ FEATURES
 • Works with new, saved and shared routes from the Mapy.com route planner.
 • Shows which Garmin Connect account is connected and offers sign-in when needed.
 • Remembers your devices, so next time you just click Send.
+• The toolbar icon opens a small panel with a quick how-to and a link to Mapy.com.
 
 REQUIREMENTS
 • A Garmin Connect account you are signed in to in the same browser.

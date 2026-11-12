@@ -114,16 +114,3 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   const ids = await getOpenedTabs();
   if (ids.includes(tabId)) await setOpenedTabs(ids.filter((id) => id !== tabId));
 });
-
-// Clicking the toolbar icon opens the Garmin dialog on a mapy.com route.
-chrome.action.onClicked.addListener(async (tab) => {
-  if (tab.url && /^https:\/\/([a-z0-9-]+\.)?mapy\.(com|cz)\//.test(tab.url)) {
-    try {
-      await chrome.tabs.sendMessage(tab.id, { target: "mapy", type: "openDialog" });
-      return;
-    } catch {
-      /* content script not ready, fall through */
-    }
-  }
-  await chrome.tabs.create({ url: "https://mapy.com/en/turisticka?planovani-trasy" });
-});

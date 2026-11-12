@@ -648,7 +648,4 @@
     updateSend();
   }
 
-  chrome.runtime.onMessage.addListener((msg) => {
-    if (msg?.target === "mapy" && msg.type === "openDialog") openDialog();
-  });
 })();

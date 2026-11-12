@@ -1,0 +1,212 @@
+/* Toolbar panel. Same visual language as the in-page dialog (Arial, green #1eae00). */
+:root {
+  --text: #0b1f35;
+  --muted: rgba(1, 30, 57, 0.6);
+  --surface: #ffffff;
+  --soft: rgba(1, 30, 57, 0.06);
+  --line: rgba(1, 30, 57, 0.1);
+  --green: #1eae00;
+  --green-hover: #1a9900;
+  --link: #16395f;
+  --support-bg: #2b3137;
+  --support-border: #3fa45c;
+  --support-text: #ffffff;
+  --mock-bg: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #e9eef4;
+    --muted: rgba(233, 238, 244, 0.65);
+    --surface: #161b22;
+    --soft: rgba(255, 255, 255, 0.06);
+    --line: rgba(255, 255, 255, 0.12);
+    --link: #8fb8e6;
+    --mock-bg: #0d1117;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 340px;
+  margin: 0;
+  padding: 20px;
+  background: var(--surface);
+  color: var(--text);
+  font: 14px/1.45 Arial, Helvetica, sans-serif;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.header img {
+  border-radius: 10px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 22px;
+}
+
+.version {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.lead {
+  margin: 0 0 14px;
+}
+
+.steps {
+  margin: 0 0 18px;
+  padding: 12px 12px 12px 32px;
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--text);
+}
+
+.steps li + li {
+  margin-top: 4px;
+}
+
+/* The Garmin button as it looks on Mapy.com (green icon + label). */
+.inline-garmin {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--green);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.inline-garmin svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* Mini picture of the Mapy.com route panel, showing where the button sits. */
+.mock {
+  margin: 8px 0 4px;
+  padding: 8px 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--mock-bg);
+}
+
+.mock-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.mock-row + .mock-row {
+  margin-top: 4px;
+}
+
+.mock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 0;
+  font-size: 10px;
+  line-height: 12px;
+  color: var(--green);
+}
+
+.mock-item svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.mock-garmin {
+  margin: 0 6px;
+  border-radius: 6px;
+  outline: 2px solid var(--green);
+  background: rgba(30, 174, 0, 0.1);
+  font-weight: 700;
+}
+
+.btn {
+  display: block;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 40px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.btn.primary {
+  background: var(--green);
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn.primary:hover {
+  background: var(--green-hover);
+}
+
+.note {
+  margin: 10px 0 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.links a {
+  color: var(--link);
+}
+
+.footer {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.support {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1.5px solid var(--support-border);
+  border-radius: 999px;
+  background: var(--support-bg);
+  color: var(--support-text);
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.support:hover {
+  background: #353c44;
+}
+
+.disclaimer {
+  margin: 12px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}

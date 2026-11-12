@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GarSync</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <img src="../icons/icon48.png" alt="" width="40" height="40" />
+      <div>
+        <h1>GarSync</h1>
+        <p class="version" id="version">Version 1.0.0</p>
+      </div>
+    </header>
+
+    <p class="lead">Send routes planned on Mapy.com to Garmin Connect and your Garmin watch or bike computer in one click.</p>
+
+    <ol class="steps">
+      <li>Plan or open a route on Mapy.com.</li>
+      <li>
+        In the route panel, click
+        <span class="inline-garmin"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M9 2h6l.7 3.1A3 3 0 0 1 18 8v8a3 3 0 0 1-2.3 2.9L15 22H9l-.7-3.1A3 3 0 0 1 6 16V8a3 3 0 0 1 2.3-2.9L9 2Zm0 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1H9Zm2 2h2v3.4l1.7 1-1 1.7L11 13.6V9Z"/></svg>Garmin</span>
+        below Save / Share / Export:
+        <div class="mock" aria-hidden="true">
+          <div class="mock-row">
+            <span class="mock-item">
+              <svg viewBox="0 0 24 24"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7L12 3Zm0 4.4-1.4 3.1-3.3.4 2.5 2.3-.7 3.3 2.9-1.6 2.9 1.6-.7-3.3 2.5-2.3-3.3-.4L12 7.4Z"/></svg>
+              Save
+            </span>
+            <span class="mock-item">
+              <svg viewBox="0 0 24 24"><path d="M21 11.5 13 4v4.2C7.6 8.9 4.2 12.6 3 18c2.4-3 5.6-4.4 10-4.5V18l8-6.5Z"/></svg>
+              Share
+            </span>
+            <span class="mock-item">
+              <svg viewBox="0 0 24 24"><path d="M5 20h14v-6h-2v4H7v-4H5v6Zm6-4h2V8.8l2.6 2.6L17 10l-5-5-5 5 1.4 1.4L11 8.8V16Z"/></svg>
+              Export
+            </span>
+          </div>
+          <div class="mock-row">
+            <span class="mock-item mock-garmin">
+              <svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M9 2h6l.7 3.1A3 3 0 0 1 18 8v8a3 3 0 0 1-2.3 2.9L15 22H9l-.7-3.1A3 3 0 0 1 6 16V8a3 3 0 0 1 2.3-2.9L9 2Zm0 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1H9Zm2 2h2v3.4l1.7 1-1 1.7L11 13.6V9Z"/></svg>
+              Garmin
+            </span>
+            <span class="mock-item mock-empty"></span>
+            <span class="mock-item mock-empty"></span>
+          </div>
+        </div>
+      </li>
+      <li>Pick your devices and click <strong>Send</strong>.</li>
+    </ol>
+
+    <a class="btn primary" href="https://mapy.com/en/turisticka?planovani-trasy" target="_blank" rel="noopener">
+      Open Mapy.com
+    </a>
+
+    <p class="note">You need to be signed in to Garmin Connect in this browser. The route appears on your device after the next sync.</p>
+
+    <nav class="links" aria-label="About GarSync">
+      <a href="https://github.com/jhnngrg/garsync" target="_blank" rel="noopener">Source code</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://jhnngrg.github.io/garsync/store/privacy-policy.html" target="_blank" rel="noopener">Privacy</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://github.com/jhnngrg/garsync/issues" target="_blank" rel="noopener">Report a problem</a>
+    </nav>
+
+    <footer class="footer">
+      <a class="support" href="https://buymeacoffee.com/jangregor" target="_blank" rel="noopener">
+        <span aria-hidden="true">☕</span> Support this project
+      </a>
+      <p class="disclaimer">Unofficial add-on. Not affiliated with Garmin or Seznam.cz.</p>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
