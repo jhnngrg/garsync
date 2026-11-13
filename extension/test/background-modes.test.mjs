@@ -7,7 +7,7 @@ import vm from "node:vm";
 
 const ext = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 
-function makeWorld({ directWorks, tabWorks = true, loggedIn = true, failAt = null }) {
+function makeWorld({ directWorks, tabWorks = true, loggedIn = true, failAt = null, hideTabUrl = false, local = {} }) {
   const log = { tabsCreated: 0, directCalls: [], tabCalls: [], dnr: null };
   let listener;
   const session = {};
@@ -34,17 +34,27 @@ function makeWorld({ directWorks, tabWorks = true, loggedIn = true, failAt = nul
 
   const chrome = {
     runtime: { id: "extid", onMessage: { addListener: (fn) => (listener = fn) } },
-    storage: { session: { async get(k) { return { [k]: session[k] }; }, async set(o) { Object.assign(session, o); } } },
+    storage: {
+      session: { async get(k) { return { [k]: session[k] }; }, async set(o) { Object.assign(session, o); } },
+      local: { async get(k) { return { [k]: local[k] }; }, async set(o) { Object.assign(local, o); } },
+    },
     declarativeNetRequest: { async updateSessionRules(r) { log.dnr = r; } },
     tabs: {
       TAB_ID_NONE: -1,
       onRemoved: { addListener() {} },
       async query() { return []; },
       async create() { log.tabsCreated++; return { id: 5 }; },
-      async get() { return { id: 5, status: "complete", url: loggedIn ? "https://connect.garmin.com/modern/courses" : "https://sso.garmin.com/x" }; },
+      async get() {
+        const url = loggedIn ? "https://connect.garmin.com/modern/courses" : "https://sso.garmin.com/x";
+        // Without a host permission the browser does not reveal the URL of a foreign page.
+        return { id: 5, status: "complete", url: hideTabUrl && !loggedIn ? undefined : url };
+      },
       async remove() {},
       async sendMessage(_id, msg) {
-        if (msg.type === "ping") return { ok: true, data: { ready: true } };
+        if (msg.type === "ping") {
+          if (!loggedIn) throw new Error("Could not establish connection. Receiving end does not exist.");
+          return { ok: true, data: { ready: true } };
+        }
         log.tabCalls.push(msg.type);
         if (!tabWorks) return { ok: false, error: "tab failed" };
         if (msg.type === "getAccount") return { ok: true, data: { profile: { name: "Jane Smith" }, devices: [] } };
@@ -62,7 +72,7 @@ function makeWorld({ directWorks, tabWorks = true, loggedIn = true, failAt = nul
   vm.createContext(ctx);
   vm.runInContext(readFileSync(path.join(ext, "background.js"), "utf8"), ctx);
   const send = (type, payload) => new Promise((resolve) => listener({ target: "background", type, payload }, {}, resolve));
-  return { send, log, session };
+  return { send, log, session, local };
 }
 
 // 1) Direct works: no tab at all, for the account and the upload.
@@ -129,4 +139,31 @@ function makeWorld({ directWorks, tabWorks = true, loggedIn = true, failAt = nul
   assert.equal(w.log.tabCalls.filter((t) => t === "uploadCourse").length, 1);
   console.log("ok 5 import failure retried in a tab");
 }
+// 6) Signed out, and the browser hides the sign-in tab's URL (Firefox without
+//    a host permission): reported as signed out instead of hanging.
+{
+  const w = makeWorld({ directWorks: true, loggedIn: false, hideTabUrl: true });
+  const acc = await w.send("getAccount");
+  assert.equal(acc.ok, false);
+  assert.equal(acc.code, "NOT_LOGGED_IN");
+  console.log("ok 6 hidden sign-in page reported as signed out");
+}
+
+// 7) Direct mode worked before: signing out is reported without opening a tab.
+{
+  const w = makeWorld({ directWorks: true, loggedIn: false, local: { garminDirectVerified: true } });
+  const acc = await w.send("getAccount");
+  assert.equal(acc.code, "NOT_LOGGED_IN");
+  assert.equal(w.log.tabsCreated, 0);
+  console.log("ok 7 signed out detected without a tab");
+}
+
+// 8) A successful direct call remembers that direct mode works in this browser.
+{
+  const w = makeWorld({ directWorks: true });
+  await w.send("getAccount");
+  assert.equal(w.local.garminDirectVerified, true);
+  console.log("ok 8 direct mode remembered");
+}
+
 console.log("background-modes: all tests passed");

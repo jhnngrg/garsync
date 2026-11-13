@@ -6,16 +6,40 @@
  */
 (() => {
   const R = globalThis.GarSyncRoute;
+  const I18N = globalThis.GarSyncI18n;
+
+  // UI language (setting "auto" | "en" | "cs" from the toolbar panel). Starts
+  // from the browser language and is updated from storage right away.
+  let i18n = { lang: I18N.resolve("auto", navigator.language), t: I18N.translator(I18N.resolve("auto", navigator.language)) };
+  const t = (key, params) => i18n.t(key, params);
+  const errorText = (err) => I18N.errorText(t, err);
+
+  async function refreshLanguage() {
+    try {
+      i18n = await I18N.load();
+    } catch {
+      /* keep the current language */
+    }
+    for (const item of document.querySelectorAll(".garsync-action--garmin")) item.title = t("sendToGarmin");
+  }
+  refreshLanguage();
+  try {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === "local" && changes.language) refreshLanguage();
+    });
+  } catch {
+    /* extension context gone */
+  }
 
   const SPORTS = [
-    [3, "Hiking"],
-    [9, "Walking"],
-    [1, "Running"],
-    [6, "Trail running"],
-    [2, "Cycling"],
-    [5, "Mountain biking"],
-    [10, "Road cycling"],
-    [4, "Other"],
+    [3, "sport.hiking"],
+    [9, "sport.walking"],
+    [1, "sport.running"],
+    [6, "sport.trailRunning"],
+    [2, "sport.cycling"],
+    [5, "sport.mountainBiking"],
+    [10, "sport.roadCycling"],
+    [4, "sport.other"],
   ];
 
   const ICON_WATCH =
@@ -39,7 +63,7 @@
   // Items are 90px wide (mapy.com's .icon-action), so three fit per row.
   // To add another feature, add an entry to EXTRA_ACTIONS.
   const EXTRA_ACTIONS = [
-    { id: "garmin", label: "Garmin", title: "Send to Garmin", icon: ICON_WATCH, onClick: () => openDialog() },
+    { id: "garmin", label: "Garmin", title: () => t("sendToGarmin"), icon: ICON_WATCH, onClick: () => openDialog() },
   ];
 
   const ROW_CSS = `
@@ -57,7 +81,7 @@
   function makeAction({ id, label, title, icon, onClick }) {
     const item = document.createElement("div");
     item.className = `icon-action garsync-action--${id}`;
-    item.title = title;
+    item.title = typeof title === "function" ? title() : title;
     item.innerHTML = `<button type="button"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true">${icon}</svg><span>${label}</span></button>`;
     item.querySelector("button").addEventListener("click", (e) => {
       e.preventDefault();
@@ -144,7 +168,7 @@
         fromUrl = null;
       }
       if (!fromUrl) {
-        throw new Error("No route is shown on the map. Open one in the route planner and wait until it is drawn.");
+        throw Object.assign(new Error("No route is shown on the map."), { code: "NO_ROUTE" });
       }
       exportUrl = R.buildExportUrl(fromUrl, lang);
       criterion = fromUrl.criterion;
@@ -153,13 +177,13 @@
     const res = await fetch(exportUrl, { credentials: "include" });
     const text = await res.text();
     if (!res.ok || !text.includes("<gpx")) {
-      throw new Error("Mapy.com could not export the route. Reload the page and try again.");
+      throw Object.assign(new Error("Mapy.com could not export the route."), { code: "EXPORT_FAILED" });
     }
     const doc = new DOMParser().parseFromString(text, "application/xml");
     const gpxName = doc.querySelector("trk > name, rte > name, metadata > name")?.textContent?.trim();
     return {
       gpx: text,
-      name: fromPage?.title || gpxName || "Route from Mapy.com",
+      name: fromPage?.title || gpxName || t("defaultRouteName"),
       km: fromPage?.km ?? distanceKm(doc),
       criterion,
     };
@@ -307,7 +331,7 @@
   }
 
   function reloadedError() {
-    return Object.assign(new Error("GarSync was updated. Reload this page to continue."), { code: "EXTENSION_RELOADED" });
+    return Object.assign(new Error("GarSync was updated."), { code: "EXTENSION_RELOADED" });
   }
 
   function asReloaded(err) {
@@ -324,8 +348,8 @@
     }
     return request.then(
       (res) => {
-        if (!res) throw new Error("The extension did not respond. Reload the page and try again.");
-        if (!res.ok) throw Object.assign(new Error(res.error), { code: res.code });
+        if (!res) throw Object.assign(new Error("The extension did not respond."), { code: "NO_RESPONSE" });
+        if (!res.ok) throw Object.assign(new Error(res.error), { code: res.code, params: res.params });
         return res.data;
       },
       (err) => {
@@ -354,7 +378,8 @@
   }
 
   function formatKm(km) {
-    return `${km.toFixed(1)} km`;
+    const value = km.toFixed(1);
+    return `${i18n.lang === "cs" ? value.replace(".", ",") : value} km`;
   }
 
   function deviceKind(name) {
@@ -387,12 +412,13 @@
   async function openDialog() {
     if (open) return;
     open = true;
+    await refreshLanguage();
     if (!host.isConnected) document.documentElement.append(host);
 
     const account = el("div", { className: "account", ariaLive: "polite" });
     const notice = el("p", { className: "notice", textContent: "" });
-    const subtitle = el("p", { className: "subtitle", textContent: "Loading route…" });
-    const nameInput = el("input", { className: "name", type: "text", ariaLabel: "Route name", required: true });
+    const subtitle = el("p", { className: "subtitle", textContent: t("loadingRoute") });
+    const nameInput = el("input", { className: "name", type: "text", ariaLabel: t("routeName"), required: true });
     nameInput.setAttribute("aria-required", "true");
     const nameError = el("p", { className: "field-error", id: "garsync-name-error", role: "alert" });
     nameInput.setAttribute("aria-describedby", "garsync-name-error");
@@ -402,28 +428,28 @@
       nameInput.setAttribute("aria-invalid", String(Boolean(msg)));
     };
     nameInput.addEventListener("input", () => nameInput.value.trim() && setNameError(""));
-    const chips = el("div", { className: "chips", role: "radiogroup", ariaLabel: "Sport" });
+    const chips = el("div", { className: "chips", role: "radiogroup", ariaLabel: t("sport") });
     const devicesBody = el("div");
     const devicesSection = el(
       "div",
       { className: "section" },
-      el("p", { className: "label", textContent: "Send to devices" }),
+      el("p", { className: "label", textContent: t("sendToDevices") }),
       devicesBody,
     );
-    const sendBtn = el("button", { className: "btn primary", type: "button", textContent: "Send", disabled: true });
-    const cancelBtn = el("button", { className: "btn secondary", type: "button", textContent: "Cancel" });
-    const closeBtn = el("button", { className: "close", type: "button", ariaLabel: "Close" }, svg(ICON_CLOSE));
+    const sendBtn = el("button", { className: "btn primary", type: "button", textContent: t("send"), disabled: true });
+    const cancelBtn = el("button", { className: "btn secondary", type: "button", textContent: t("cancel") });
+    const closeBtn = el("button", { className: "close", type: "button", ariaLabel: t("close") }, svg(ICON_CLOSE));
 
     const dialog = el(
       "div",
-      { className: "dialog", role: "dialog", ariaModal: "true", ariaLabel: "Send to Garmin" },
+      { className: "dialog", role: "dialog", ariaModal: "true", ariaLabel: t("sendToGarmin") },
       closeBtn,
-      el("h4", { textContent: "Send to Garmin" }),
+      el("h4", { textContent: t("sendToGarmin") }),
       subtitle,
       account,
       notice,
-      el("div", { className: "section" }, el("p", { className: "label" }, "Route name", el("span", { className: "required", textContent: " *", ariaHidden: "true" })), nameInput, nameError),
-      el("div", { className: "section" }, el("p", { className: "label", textContent: "Sport" }), chips),
+      el("div", { className: "section" }, el("p", { className: "label" }, t("routeName"), el("span", { className: "required", textContent: " *", ariaHidden: "true" })), nameInput, nameError),
+      el("div", { className: "section" }, el("p", { className: "label", textContent: t("sport") }), chips),
       devicesSection,
       el("div", { className: "footer" }, cancelBtn, sendBtn),
     );
@@ -439,8 +465,8 @@
 
     const renderChips = () => {
       chips.replaceChildren(
-        ...SPORTS.map(([id, label]) => {
-          const chip = el("div", { className: "chip", textContent: label });
+        ...SPORTS.map(([id, key]) => {
+          const chip = el("div", { className: "chip", textContent: t(key) });
           chip.setAttribute("aria-checked", String(id === sport));
           return toggleable(chip, {
             role: "radio",
@@ -468,7 +494,7 @@
 
     const renderAccount = (state, data) => {
       accountState = state;
-      const connecting = state === "loading";
+      const connecting = state === "loading" || state === "slow";
       dialog.classList.toggle("is-connecting", connecting);
       for (const child of dialog.children) {
         if (child !== account && child !== closeBtn) child.inert = connecting;
@@ -485,32 +511,41 @@
         const link = profile.profileUrl
           ? el("a", { href: profile.profileUrl, target: "_blank", rel: "noopener", textContent: "Garmin Connect" })
           : "Garmin Connect";
-        sub = el("div", { className: "account-sub" }, el("span", { className: "dot" }), link, " · connected");
+        sub = el("div", { className: "account-sub" }, el("span", { className: "dot" }), link, ` · ${t("connected")}`);
       } else if (state === "loggedOut") {
         avatar = el("div", { className: "avatar muted" }, svg(ICON_PERSON));
-        name = el("div", { className: "account-name", textContent: "Not signed in" });
+        name = el("div", { className: "account-name", textContent: t("notSignedIn") });
         sub = el("div", { className: "account-sub" }, el("span", { className: "dot off" }), "Garmin Connect");
-        action = el("button", { className: "btn primary", type: "button", textContent: "Sign in" });
+        action = el("button", { className: "btn primary", type: "button", textContent: t("signIn") });
         action.addEventListener("click", () => {
           send("openLogin").catch(() => {});
-          account.querySelector(".account-sub").lastChild.textContent = "Garmin Connect · come back here after signing in";
+          account.querySelector(".account-sub").lastChild.textContent = `Garmin Connect · ${t("comeBackAfterSignIn")}`;
+        });
+      } else if (state === "slow") {
+        avatar = el("div", { className: "avatar muted" }, svg(ICON_PERSON));
+        name = el("div", { className: "account-name", textContent: t("stillConnecting") });
+        sub = el("div", { className: "account-sub" }, el("span", { className: "dot off" }), t("notSignedInQuestion"));
+        action = el("button", { className: "btn primary", type: "button", textContent: t("signIn") });
+        action.addEventListener("click", () => {
+          send("openLogin").catch(() => {});
+          account.querySelector(".account-sub").lastChild.textContent = t("comeBackAfterSignInSentence");
         });
       } else if (state === "reloaded") {
         avatar = el("div", { className: "avatar muted" }, svg(ICON_PERSON));
-        name = el("div", { className: "account-name", textContent: "GarSync was updated" });
-        sub = el("div", { className: "account-sub" }, el("span", { className: "dot off" }), "Reload this page to continue.");
-        action = el("button", { className: "btn primary", type: "button", textContent: "Reload page" });
+        name = el("div", { className: "account-name", textContent: t("updatedTitle") });
+        sub = el("div", { className: "account-sub" }, el("span", { className: "dot off" }), t("reloadToContinue"));
+        action = el("button", { className: "btn primary", type: "button", textContent: t("reloadPage") });
         action.addEventListener("click", () => location.reload());
       } else if (state === "error") {
         avatar = el("div", { className: "avatar muted" }, svg(ICON_PERSON));
-        name = el("div", { className: "account-name", textContent: "Connection error" });
-        sub = el("div", { className: "account-sub" }, el("span", { className: "dot error" }), data || "Please try again.");
-        action = el("button", { className: "btn secondary", type: "button", textContent: "Try again" });
+        name = el("div", { className: "account-name", textContent: t("connectionError") });
+        sub = el("div", { className: "account-sub" }, el("span", { className: "dot error" }), data || t("pleaseTryAgain"));
+        action = el("button", { className: "btn secondary", type: "button", textContent: t("tryAgain") });
         action.addEventListener("click", () => loadAccount());
       } else {
         avatar = el("div", { className: "avatar muted" }, svg(ICON_PERSON));
         name = el("div", { className: "account-name", textContent: "Garmin Connect" });
-        sub = el("div", { className: "account-sub" }, el("span", { className: "dot off" }), "Connecting…");
+        sub = el("div", { className: "account-sub" }, el("span", { className: "dot off" }), t("connecting"));
       }
       account.replaceChildren(...[avatar, el("div", { className: "account-text" }, name, sub), action].filter(Boolean));
     };
@@ -518,7 +553,7 @@
     /* --- device list --- */
 
     const renderDevices = () => {
-      if (accountState === "loading") {
+      if (accountState === "loading" || accountState === "slow") {
         devicesBody.replaceChildren(el("div", { className: "skeleton" }));
         return;
       }
@@ -528,17 +563,17 @@
             className: "hint",
             textContent:
               accountState === "loggedOut"
-                ? "Your devices will show up here after you sign in to Garmin Connect."
+                ? t("devicesAfterSignIn")
                 : accountState === "reloaded"
-                  ? "Your devices will show up here after you reload the page."
-                  : "Could not load your devices.",
+                  ? t("devicesAfterReload")
+                  : t("devicesLoadFailed"),
           }),
         );
         return;
       }
       if (!devices.length) {
         devicesBody.replaceChildren(
-          el("p", { className: "hint", textContent: "No devices are paired with this Garmin account. The route will only be saved to Garmin Connect." }),
+          el("p", { className: "hint", textContent: t("noDevices") }),
         );
         return;
       }
@@ -555,7 +590,7 @@
             el("div", { className: "device-name", textContent: d.name }),
             el("div", {
               className: "device-sub",
-              textContent: [kind === "computer" ? "Bike computer" : "Watch", d.primary ? "primary device" : ""]
+              textContent: [kind === "computer" ? t("bikeComputer") : t("watch"), d.primary ? t("primaryDevice") : ""]
                 .filter(Boolean)
                 .join(" · "),
             }),
@@ -577,7 +612,7 @@
         list,
         el("p", {
           className: "hint",
-          textContent: "The route appears on your device after the next sync. With no device selected, it is only saved to Garmin Connect.",
+          textContent: t("deviceHint"),
         }),
       );
     };
@@ -588,6 +623,10 @@
       renderAccount("loading");
       renderDevices();
       updateSend();
+      // Safety net: never sit on "Connecting…" silently; offer sign-in after a while.
+      const slowTimer = setTimeout(() => {
+        if (req === accountRequest && accountState === "loading") renderAccount("slow");
+      }, 8000);
       try {
         const result = await send("getAccount");
         if (req !== accountRequest) return;
@@ -603,15 +642,16 @@
         devices = null;
         if (err.code === "NOT_LOGGED_IN") renderAccount("loggedOut");
         else if (err.code === "EXTENSION_RELOADED") renderAccount("reloaded");
-        else renderAccount("error", err.message);
+        else renderAccount("error", errorText(err));
       }
+      clearTimeout(slowTimer);
       renderDevices();
       updateSend();
     }
 
     // After signing in in another tab, coming back refreshes the account.
     const onReturn = () => {
-      if (document.visibilityState === "visible" && accountState === "loggedOut") loadAccount();
+      if (document.visibilityState === "visible" && (accountState === "loggedOut" || accountState === "slow")) loadAccount();
     };
     window.addEventListener("focus", onReturn);
     document.addEventListener("visibilitychange", onReturn);
@@ -637,24 +677,26 @@
 
     /** Replaces the whole dialog with the confirmation. */
     const showSuccess = (courseName, deviceNames, url) => {
-      const okBtn = el("button", { className: "btn primary", type: "button", textContent: "Close" });
+      const okBtn = el("button", { className: "btn primary", type: "button", textContent: t("close") });
       okBtn.addEventListener("click", close);
-      dialog.setAttribute("aria-label", "Route sent");
+      dialog.setAttribute("aria-label", t("routeSent"));
       dialog.replaceChildren(
         closeBtn,
         el(
           "div",
           { className: "success", role: "status" },
           el("div", { className: "success-icon" }, svg(ICON_CHECK)),
-          el("h3", { textContent: deviceNames.length ? "Your route is on its way" : "Your route is in Garmin Connect" }),
+          el("h3", { textContent: deviceNames.length ? t("successTitleDevices") : t("successTitleSaved") }),
           el("p", { className: "success-name", textContent: courseName }),
           el("p", {
             className: "success-text",
             textContent: deviceNames.length
-              ? `It will appear on ${deviceNames.join(" and ")} after the next sync.`
-              : "It has been saved to your courses in Garmin Connect.",
+              ? t(deviceNames.length > 1 ? "successDevicesMany" : "successDevicesOne", {
+                  devices: deviceNames.join(` ${t("and")} `),
+                })
+              : t("successSaved"),
           }),
-          url ? el("a", { className: "success-link", href: url, target: "_blank", rel: "noopener", textContent: "Open in Garmin Connect" }) : null,
+          url ? el("a", { className: "success-link", href: url, target: "_blank", rel: "noopener", textContent: t("openInGarmin") }) : null,
           okBtn,
         ),
       );
@@ -665,7 +707,7 @@
       if (!route || !devices) return;
       const courseName = nameInput.value.trim();
       if (!courseName) {
-        setNameError("Enter a route name.");
+        setNameError(t("routeNameRequired"));
         nameInput.focus();
         return;
       }
@@ -674,13 +716,13 @@
         await storageSet({ deviceIds });
       } catch (err) {
         renderAccount("reloaded");
-        setNotice(err.message, "error");
+        setNotice(errorText(err), "error");
         return;
       }
       busy = true;
       updateSend();
       cancelBtn.disabled = true;
-      sendBtn.textContent = "Sending…";
+      sendBtn.textContent = t("sending");
       setNotice("");
       try {
         const result = await send("uploadCourse", {
@@ -698,16 +740,16 @@
           devices = null;
           renderAccount("loggedOut");
           renderDevices();
-          setNotice("Your Garmin Connect session has expired. Sign in and send the route again.", "error");
+          setNotice(t("sessionExpired"), "error");
         } else if (err.code === "EXTENSION_RELOADED") {
           devices = null;
           renderAccount("reloaded");
           renderDevices();
-          setNotice(err.message, "error");
+          setNotice(errorText(err), "error");
         } else {
-          setNotice(err.message, "error");
+          setNotice(errorText(err), "error");
         }
-        sendBtn.textContent = "Send";
+        sendBtn.textContent = t("send");
       } finally {
         busy = false;
         cancelBtn.disabled = false;
@@ -721,12 +763,12 @@
     try {
       route = await loadRoute();
       nameInput.value = route.name;
-      subtitle.textContent = `Route from Mapy.com · ${formatKm(route.km)}`;
+      subtitle.textContent = t("routeFrom", { km: formatKm(route.km) });
       sport = R.garminSportFor(route.criterion);
       renderChips();
     } catch (err) {
-      subtitle.textContent = "Could not load the route";
-      setNotice(err.message, "error");
+      subtitle.textContent = t("routeLoadFailed");
+      setNotice(errorText(err), "error");
     }
     updateSend();
   }

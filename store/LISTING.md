@@ -1,4 +1,4 @@
-# Chrome Web Store – submission kit for GarSync 1.0.0
+# Chrome Web Store – submission kit for GarSync 1.0.1
 
 Everything you fill in on the [Developer Dashboard](https://chrome.google.com/webstore/devconsole), in tab order. Texts are ready to copy.
 The privacy policy is served by GitHub Pages from this repository.
@@ -10,13 +10,13 @@ The privacy policy is served by GitHub Pages from this repository.
 - [ ] Developer account registered, USD 5 fee paid, 2-Step Verification turned on.
 - [ ] Trader / non-trader declaration (EU) filled in under account settings.
 - [ ] Privacy policy is live at https://jhnngrg.github.io/garsync/store/privacy-policy.html (GitHub Pages).
-- [ ] Package built with `./store/build.sh` (creates `dist/garsync-1.0.0.zip`).
+- [ ] Package built with `./store/build.sh` (creates `dist/garsync-chrome-1.0.1.zip`).
 
 ---
 
 ## 1. Package
 
-Upload `dist/garsync-1.0.0.zip`.
+Upload `dist/garsync-chrome-1.0.1.zip`.
 
 ---
 
@@ -49,6 +49,7 @@ FEATURES
 • Works with new, saved and shared routes from the Mapy.com route planner.
 • Shows which Garmin Connect account is connected and offers sign-in when needed.
 • Remembers your devices, so next time you just click Send.
+• Available in English and Czech (switch in the toolbar panel).
 • The toolbar icon opens a small panel with a quick how-to and a link to Mapy.com.
 
 REQUIREMENTS
@@ -118,6 +119,11 @@ Mapy.cz is the former domain of Mapy.com and still serves the same route planner
 **Host permission: https://connect.garmin.com/\***
 ```
 Uploads the route to the user's own Garmin Connect account as a course, reads the user's display name and paired devices for the send dialog, and queues the course for the devices the user selects. Requests use the user's existing Garmin Connect session (directly from the background worker, or inside a connect.garmin.com tab as a fallback); the extension never sees or stores the password.
+```
+
+**Host permission: https://sso.garmin.com/\***
+```
+Garmin's sign-in page. The extension only checks whether a Garmin Connect tab it opened in the background ended up on this page, so it can tell the user they are signed out and offer a "Sign in" button instead of waiting. It never reads or fills in anything on the sign-in page.
 ```
 
 ### Are you using remote code?

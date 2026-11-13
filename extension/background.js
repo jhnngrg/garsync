@@ -13,7 +13,10 @@
  * The mode is decided on the read-only account lookup, so a route is never
  * uploaded twice: an upload only falls back if its first, non-saving step fails.
  */
-importScripts("lib/garmin-api.js");
+// Chrome runs this file as a service worker and loads the shared library here.
+// Firefox runs it as a background script and loads the library from the
+// manifest ("background.scripts") instead, where importScripts does not exist.
+if (typeof importScripts === "function") importScripts("lib/garmin-api.js");
 
 const SERVICES = {
   garmin: {
@@ -73,7 +76,8 @@ async function fetchCsrf() {
   if (csrfCache && Date.now() - csrfCache.at < CSRF_TTL_MS) return csrfCache.token;
   await headersReady;
   const res = await fetch(GARMIN_PAGE, { credentials: "include", headers: { accept: "text/html" } });
-  if (SERVICES.garmin.isLogin(res.url)) throw GarSyncGarmin.notLoggedIn();
+  // Garmin sent us to its sign-in page: the session cookies say "signed out".
+  if (SERVICES.garmin.isLogin(res.url)) throw Object.assign(GarSyncGarmin.notLoggedIn(), { signInPage: true });
   const html = await res.text();
   const match =
     html.match(/<meta[^>]+name=["']csrf-token["'][^>]*content=["']([^"']+)["']/i) ||
@@ -95,14 +99,22 @@ async function setMode(mode) {
   await chrome.storage.session.set({ garminMode: mode });
 }
 
+// Once direct mode has worked in this browser, a redirect to Garmin's sign-in
+// page really means "signed out", so no tab is needed to double-check it.
+async function directVerified() {
+  return Boolean((await chrome.storage.local.get("garminDirectVerified")).garminDirectVerified);
+}
+
 /** Runs a Garmin call directly, or in a Garmin Connect tab when that is needed. */
 async function garminCall(type, payload) {
   if ((await getMode()) !== "tab") {
     try {
       const data = await direct[type](payload);
       await setMode("direct");
+      await chrome.storage.local.set({ garminDirectVerified: true });
       return data;
     } catch (err) {
+      if (err.code === "NOT_LOGGED_IN" && err.signInPage && (await directVerified())) throw err;
       const safeToRetry = type !== "uploadCourse" || err.stage === "import";
       console.info(
         "GarSync: direct Garmin Connect request failed:",
@@ -155,29 +167,34 @@ async function getServiceTab(service) {
   await setOpenedTabs([...(await getOpenedTabs()), tab.id]);
 
   const until = Date.now() + 30000;
+  let elsewhere = 0;
   while (Date.now() < until) {
     await new Promise((r) => setTimeout(r, 700));
     let current;
     try {
       current = await chrome.tabs.get(tab.id);
     } catch {
-      throw new Error(`The ${cfg.label} tab was closed.`);
+      throw Object.assign(new Error(`The ${cfg.label} tab was closed.`), { code: "TAB_CLOSED" });
     }
-    if (cfg.isLogin(current.url) || cfg.isLogin(current.pendingUrl)) {
+    // A finished page outside Garmin Connect (where our script cannot run) is the
+    // sign-in page, also when the browser does not tell us its URL.
+    const onService = (current.url || "").startsWith(cfg.match.replace("*", ""));
+    elsewhere = current.status === "complete" && !onService ? elsewhere + 1 : 0;
+    if (cfg.isLogin(current.url) || cfg.isLogin(current.pendingUrl) || elsewhere >= 3) {
       // Not signed in: drop the hidden tab; the dialog offers a sign-in button.
       await closeOpenedTabs();
       throw notLoggedIn(service);
     }
     if (current.status === "complete" && (await ping(tab.id, service))) return tab.id;
   }
-  throw new Error(`${cfg.label} did not load in time. Please try again.`);
+  throw Object.assign(new Error(`${cfg.label} did not load in time.`), { code: "TAB_TIMEOUT" });
 }
 
 async function callService(service, type, payload) {
   const tabId = await getServiceTab(service);
   const res = await chrome.tabs.sendMessage(tabId, { target: service, type, payload });
-  if (!res) throw new Error(`${SERVICES[service].label} did not respond. Reload its tab and try again.`);
-  if (!res.ok) throw Object.assign(new Error(res.error), { code: res.code });
+  if (!res) throw Object.assign(new Error(`${SERVICES[service].label} did not respond.`), { code: "TAB_TIMEOUT" });
+  if (!res.ok) throw Object.assign(new Error(res.error), { code: res.code, params: res.params });
   return res.data;
 }
 
@@ -219,7 +236,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   Promise.resolve()
     .then(run)
     .then((data) => sendResponse({ ok: true, data }))
-    .catch((err) => sendResponse({ ok: false, error: String(err?.message || err), code: err?.code }));
+    .catch((err) => sendResponse({ ok: false, error: String(err?.message || err), code: err?.code, params: err?.params }));
   return true;
 });
 

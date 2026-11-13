@@ -16,7 +16,7 @@
       if (token) return token;
       await new Promise((r) => setTimeout(r, 300));
     }
-    throw new Error("Could not load your Garmin Connect session. Are you signed in at connect.garmin.com?");
+    throw Object.assign(new Error("Could not load your Garmin Connect session."), { code: "SESSION_MISSING" });
   }
 
   const garmin = globalThis.GarSyncGarmin.createGarminClient({ base: "/gc-api", getCsrf: waitForCsrf });
@@ -33,7 +33,7 @@
     Promise.resolve()
       .then(run)
       .then((data) => sendResponse({ ok: true, data }))
-      .catch((err) => sendResponse({ ok: false, error: String(err?.message || err), code: err?.code }));
+      .catch((err) => sendResponse({ ok: false, error: String(err?.message || err), code: err?.code, params: err?.params }));
     return true;
   });
 })();

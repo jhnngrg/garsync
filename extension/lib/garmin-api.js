@@ -32,7 +32,10 @@
       const text = await res.text();
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) throw notLoggedIn();
-        throw new Error(`Garmin Connect returned error ${res.status} (${path}). ${text.slice(0, 200)}`.trim());
+        throw Object.assign(new Error(`Garmin Connect returned error ${res.status} (${path}). ${text.slice(0, 200)}`.trim()), {
+          code: "HTTP_ERROR",
+          params: { status: res.status },
+        });
       }
       if (!text) return null;
       try {
@@ -86,7 +89,7 @@
         throw Object.assign(err, { stage: "import" });
       }
       if (!parsed || !Array.isArray(parsed.geoPoints) || parsed.geoPoints.length < 2) {
-        throw Object.assign(new Error("Garmin Connect could not read the GPX from Mapy.com."), { stage: "import" });
+        throw Object.assign(new Error("Garmin Connect could not read the GPX from Mapy.com."), { code: "GPX_UNREADABLE", stage: "import" });
       }
 
       // 2) Save it as a course, with the body Garmin's own web editor sends.
@@ -114,7 +117,7 @@
         },
       });
       const courseId = created?.courseId;
-      if (!courseId) throw new Error("Garmin Connect did not confirm the course was saved.");
+      if (!courseId) throw Object.assign(new Error("Garmin Connect did not confirm the course was saved."), { code: "NOT_SAVED" });
 
       // 3) Queue it for the chosen devices; they pick it up on their next sync.
       let sentTo = [];
