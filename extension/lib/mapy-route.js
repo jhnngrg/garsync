@@ -134,5 +134,39 @@
     return 3;
   }
 
-  root.GarSyncRoute = { decodeCoords, encodePoint, toWGS84, parseRouteUrl, buildExportUrl, buildExportUrlFromParams, garminSportFor };
+  function escapeXml(text) {
+    return String(text).replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c]);
+  }
+
+  /**
+   * Adds waypoints (<wpt>) to a GPX so Garmin Connect turns them into Course
+   * Points. Each point is moved onto the nearest track point, searching forward
+   * from the previous one, so it sits on the course even when it was clicked
+   * next to the road. points: [{ lat, lon, name }]. Returns the new GPX text.
+   */
+  function addWaypoints(gpx, points) {
+    if (!points || !points.length) return gpx;
+    const track = [...gpx.matchAll(/<(?:trkpt|rtept)\b[^>]*>/g)].map((m) => ({
+      lat: parseFloat(/\blat="([^"]+)"/.exec(m[0])?.[1]),
+      lon: parseFloat(/\blon="([^"]+)"/.exec(m[0])?.[1]),
+    }));
+    const cos = Math.cos(((points[0].lat || 0) * Math.PI) / 180);
+    const dist2 = (a, b) => ((a.lat - b.lat) ** 2 + ((a.lon - b.lon) * cos) ** 2);
+    let from = 0;
+    const wpts = points.map((p) => {
+      let best = null;
+      for (let i = from; i < track.length; i++) {
+        if (!best || dist2(track[i], p) < dist2(track[best.i], p)) best = { i };
+      }
+      const at = best ? track[best.i] : p;
+      if (best) from = best.i;
+      return `\t<wpt lat="${at.lat}" lon="${at.lon}">\n\t\t<name>${escapeXml(p.name)}</name>\n\t\t<type>Generic</type>\n\t</wpt>\n`;
+    });
+    // GPX 1.1 wants <wpt> before <rte>/<trk>.
+    const at = gpx.search(/<(?:rte|trk)\b/);
+    if (at < 0) return gpx;
+    return gpx.slice(0, at) + wpts.join("").trimStart() + "\t" + gpx.slice(at);
+  }
+
+  root.GarSyncRoute = { decodeCoords, encodePoint, toWGS84, parseRouteUrl, buildExportUrl, buildExportUrlFromParams, garminSportFor, addWaypoints };
 })(typeof globalThis !== "undefined" ? globalThis : this);

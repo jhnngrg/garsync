@@ -4,6 +4,8 @@
 #   dist/garsync-firefox-<version>.zip  -> addons.mozilla.org
 #   dist/garsync-edge-<version>.zip     -> Microsoft Edge Add-ons (same content as Chrome)
 #   dist/chrome/, dist/firefox/, dist/edge/ -> unpacked copies for local testing
+#   dist/test/                          -> "GarSync TEST": Chrome copy with the
+#                                          features from lib/flags.js switched on
 # Usage: ./store/build.sh   (run from the project root or anywhere)
 set -euo pipefail
 
@@ -36,3 +38,23 @@ for target in $TARGETS; do
   (cd "$DIST/$target" && zip -r -X -q "$OUT" .)
   echo "Done: $OUT"
 done
+
+# GarSync TEST: unpacked only, never uploaded. Loads next to the store version
+# (different folder = different extension ID); its button reads "Garmin TEST".
+rm -rf "$DIST/test"
+cp -R "$DIST/chrome" "$DIST/test"
+cat > "$DIST/test/lib/flags.js" <<'FLAGS'
+(function (root) {
+  root.GarSyncFlags = { coursePoints: true, debug: true, buttonLabel: "Garmin TEST" };
+})(typeof globalThis !== "undefined" ? globalThis : this);
+FLAGS
+python3 - "$DIST/test/manifest.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+m = json.load(open(path))
+m["name"] = "GarSync TEST"
+m["short_name"] = "GarSync TEST"
+m["action"]["default_title"] = "GarSync TEST"
+json.dump(m, open(path, "w"), indent=2, ensure_ascii=False)
+PY
+echo "Done: $DIST/test (load unpacked)"

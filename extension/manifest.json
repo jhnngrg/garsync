@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "GarSync – Send Mapy.com routes to Garmin",
   "short_name": "GarSync",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Send a route from Mapy.com to Garmin Connect and your Garmin watch or bike computer in one click. Unofficial add-on.",
   "minimum_chrome_version": "111",
   "icons": {
@@ -57,6 +57,7 @@
       "js": [
         "lib/mapy-route.js",
         "lib/i18n.js",
+        "lib/flags.js",
         "content/mapy.js"
       ],
       "run_at": "document_idle"

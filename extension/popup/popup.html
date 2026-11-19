@@ -13,6 +13,13 @@
         <h1>GarSync</h1>
         <p class="version" id="version"></p>
       </div>
+      <!-- Language switch sits in the header so the panel fits without scrolling. -->
+      <div class="segmented" role="radiogroup" aria-labelledby="language-label">
+        <span class="visually-hidden" id="language-label" data-i18n="language">Language</span>
+        <button type="button" role="radio" data-language="auto" data-i18n="languageAuto">Auto</button>
+        <button type="button" role="radio" data-language="en">EN</button>
+        <button type="button" role="radio" data-language="cs">CZ</button>
+      </div>
     </header>
 
     <p class="lead" data-i18n="lead">Send routes planned on Mapy.com to Garmin Connect and your Garmin watch or bike computer in one click.</p>
@@ -55,23 +62,12 @@
 
     <p class="note" data-i18n="note">You need to be signed in to Garmin Connect in this browser. The route appears on your device after the next sync.</p>
 
-    <section class="settings" aria-labelledby="language-label">
-      <span class="settings-label" id="language-label" data-i18n="language">Language</span>
-      <div class="segmented" role="radiogroup" aria-labelledby="language-label">
-        <button type="button" role="radio" data-language="auto" data-i18n="languageAuto">Auto</button>
-        <button type="button" role="radio" data-language="en">EN</button>
-        <button type="button" role="radio" data-language="cs">CZ</button>
-      </div>
-    </section>
-
     <footer class="footer">
       <a class="support" href="https://buymeacoffee.com/jangregor" target="_blank" rel="noopener">
         <span aria-hidden="true">☕</span> <span data-i18n="support">Support this project</span>
       </a>
       <p class="disclaimer" data-i18n="disclaimer">Unofficial add-on. Not affiliated with Garmin or Seznam.cz.</p>
       <nav class="links" aria-label="About GarSync">
-        <a href="https://github.com/jhnngrg/garsync" target="_blank" rel="noopener" data-i18n="sourceCode">Source code</a>
-        <span aria-hidden="true">·</span>
         <a href="https://jhnngrg.github.io/garsync/store/privacy-policy.html" target="_blank" rel="noopener" data-i18n="privacy">Privacy</a>
         <span aria-hidden="true">·</span>
         <a href="https://github.com/jhnngrg/garsync/issues" target="_blank" rel="noopener" data-i18n="reportProblem">Report a problem</a>

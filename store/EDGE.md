@@ -1,6 +1,15 @@
-# Microsoft Edge Add-ons – submission kit for GarSync 1.0.1
+# Microsoft Edge Add-ons – submission kit for GarSync 1.0.2
 
 Step by step for [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons) via Partner Center. Edge is Chromium-based, so it uses the Chrome package unchanged. Texts are ready to copy.
+
+## What's new in 1.0.2
+
+Release notes, ready to copy where the store asks for them:
+```
+• Waypoints of the Mapy.com route can now be added to the Garmin course as Course Points (switch in the send dialog). Unnamed points keep the label Mapy.com shows, e.g. "Point 5".
+• The toolbar panel fits without scrolling; the language switch moved to its header.
+• Clearer text about courses saved without a device.
+```
 
 ---
 
@@ -10,7 +19,7 @@ Step by step for [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/ad
    ```bash
    ./store/build.sh
    ```
-   You get `dist/garsync-edge-1.0.1.zip` (for Edge Add-ons, same content as the Chrome package) and an unpacked copy in `dist/edge/`.
+   You get `dist/garsync-edge-1.0.2.zip` (for Edge Add-ons, same content as the Chrome package) and an unpacked copy in `dist/edge/`.
 2. Test in Edge:
    1. Open `edge://extensions`.
    2. Turn on **Developer mode** (left sidebar).
@@ -32,7 +41,7 @@ Step by step for [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/ad
 ## 2. Submit the extension
 
 1. In Partner Center open **Microsoft Edge → Extensions → Create new extension**.
-2. **Packages:** upload `dist/garsync-edge-1.0.1.zip`. Partner Center reads the name, version and permissions from it.
+2. **Packages:** upload `dist/garsync-edge-1.0.2.zip`. Partner Center reads the name, version and permissions from it.
 3. Fill in **Availability**, **Properties** and **Store listings** (sections 3–5 below).
 4. **Publish** → add the notes from section 6 → **Submit**. Certification usually takes up to 7 business days.
 
@@ -90,6 +99,7 @@ FEATURES
 • Pre-selects the sport from the Mapy.com route type (hiking, walking, cycling, mountain biking, road cycling…).
 • Works with new, saved and shared routes from the Mapy.com route planner.
 • Shows which Garmin Connect account is connected and offers sign-in when needed.
+• Adds the waypoints of your Mapy.com route as Course Points, so your device announces them on the way (can be switched off).
 • Remembers your devices, so next time you just click Send.
 • Available in English and Czech (switch in the toolbar panel).
 
@@ -125,8 +135,11 @@ hiking
 | Field | File | Size |
 |---|---|---|
 | Extension store logo (required) | `store-logo-300.png` | 300×300 PNG |
-| Small promotional tile (optional) | `promo-tile-440x280.jpg` | 440×280 |
-| Screenshots | `screenshot-1-button.jpg`, `screenshot-2-dialog.jpg`, `screenshot-3-done.jpg` | 1280×800 |
+| Small promotional tile (optional) | `promo-tile-440x280.png` | 440×280 PNG |
+| Large promotional tile (optional) | `promo-tile-large-1400x560.png` | 1400×560 PNG |
+| Screenshots | `screenshot-1-button.png`, `screenshot-2-dialog.png`, `screenshot-3-done.png` | 1280×800 PNG |
+
+Partner Center accepts PNG only, so use the `.png` files here (the `.jpg` versions are for the Chrome Web Store).
 
 The screenshots show the real Mapy.com site running the extension's real code. The user name (Jane Smith) and the devices are sample data.
 
@@ -146,7 +159,7 @@ GarSync needs a Garmin Connect account to work.
 Without a paired device the route is only saved to Garmin Connect, which is enough to verify the extension.
 
 Permissions:
-- storage: remembers the selected devices and the UI language, locally.
+- storage: remembers the selected devices, the Course Points switch and the UI language, locally.
 - declarativeNetRequestWithHostAccess: a session rule sets Origin, Referer and Sec-Fetch-* on the extension's own background requests to connect.garmin.com/gc-api/ (tabId -1 only). Garmin Connect is behind Cloudflare and rejects API requests without these headers. User browsing is not affected.
 - mapy.com / mapy.cz: adds the Garmin button to the route panel and reads the open route via Mapy.com's own GPX export.
 - connect.garmin.com: uploads the course to the user's own account, reads the display name and paired devices.

@@ -31,9 +31,9 @@
 }
 
 body {
-  width: 340px;
+  width: 380px;
   margin: 0;
-  padding: 20px;
+  padding: 16px 20px;
   background: var(--surface);
   color: var(--text);
   font: 14px/1.45 Arial, Helvetica, sans-serif;
@@ -43,7 +43,12 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
+}
+
+.header > div:first-of-type {
+  flex: 1;
+  min-width: 0;
 }
 
 .header img {
@@ -63,12 +68,12 @@ h1 {
 }
 
 .lead {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
 }
 
 .steps {
-  margin: 0 0 18px;
-  padding: 12px 12px 12px 32px;
+  margin: 0 0 14px;
+  padding: 10px 12px 10px 32px;
   border-radius: 8px;
   background: var(--soft);
   color: var(--text);
@@ -96,8 +101,8 @@ h1 {
 
 /* Mini picture of the Mapy.com route panel, showing where the button sits. */
 .mock {
-  margin: 8px 0 4px;
-  padding: 8px 4px;
+  margin: 6px 0 4px;
+  padding: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--mock-bg);
@@ -109,7 +114,7 @@ h1 {
 }
 
 .mock-row + .mock-row {
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .mock-item {
@@ -158,7 +163,7 @@ h1 {
 }
 
 .note {
-  margin: 10px 0 16px;
+  margin: 10px 0 0;
   font-size: 12px;
   color: var(--muted);
 }
@@ -168,7 +173,7 @@ h1 {
   flex-wrap: wrap;
   gap: 6px;
   justify-content: center;
-  margin-top: 8px;
+  margin-top: 4px;
   font-size: 12px;
   color: var(--muted);
 }
@@ -177,21 +182,19 @@ h1 {
   color: var(--link);
 }
 
-/* Settings: language switch */
-.settings {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0 0 4px;
-}
-
-.settings-label {
-  font-size: 13px;
-  color: var(--muted);
+/* Language switch (in the header) */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .segmented {
+  flex: none;
+  align-self: flex-start;
   display: inline-flex;
   padding: 2px;
   border-radius: 8px;
@@ -199,8 +202,8 @@ h1 {
 }
 
 .segmented button {
-  min-width: 48px;
-  padding: 5px 10px;
+  min-width: 38px;
+  padding: 4px 8px;
   border: 0;
   border-radius: 6px;
   background: none;
@@ -222,8 +225,8 @@ h1 {
 }
 
 .footer {
-  margin-top: 16px;
-  padding-top: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--line);
   text-align: center;
 }
@@ -232,7 +235,7 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 8px 18px;
   border: 1.5px solid var(--support-border);
   border-radius: 999px;
   background: var(--support-bg);
@@ -246,7 +249,7 @@ h1 {
 }
 
 .disclaimer {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
   font-size: 11px;
   color: var(--muted);
 }

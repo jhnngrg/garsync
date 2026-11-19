@@ -142,6 +142,8 @@
         distanceMeter: created.distanceMeter,
         url: `https://connect.garmin.com/modern/course/${courseId}`,
         sentTo,
+        // How many Course Points Garmin took over from the GPX waypoints.
+        coursePoints: Array.isArray(parsed.coursePoints) ? parsed.coursePoints.length : 0,
       };
     }
 

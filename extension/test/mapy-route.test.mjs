@@ -31,5 +31,21 @@ assert.equal(
 );
 assert.equal(R.parseRouteUrl("https://mapy.com/cs/turisticka?x=14&y=50&z=10"), null);
 
+// Via points become <wpt> before <trk>, moved onto the nearest track point,
+// with names escaped; no points leaves the GPX untouched.
+const gpx = `<?xml version="1.0"?>\n<gpx>\n\t<trk>\n\t\t<trkseg>\n` +
+  [[50, 14], [50.001, 14.001], [50.002, 14.002], [50.001, 14.001]].map(([la, lo]) => `\t\t\t<trkpt lat="${la}" lon="${lo}"></trkpt>\n`).join("") +
+  `\t\t</trkseg>\n\t</trk>\n</gpx>\n`;
+assert.equal(R.addWaypoints(gpx, []), gpx);
+const withWpt = R.addWaypoints(gpx, [
+  { lat: 50.0011, lon: 14.0009, name: "Café <U Lípy> & spol." },
+  { lat: 50.0021, lon: 14.0021, name: "Bod 2" },
+]);
+assert.ok(withWpt.indexOf("<wpt") < withWpt.indexOf("<trk>"), "wpt before trk");
+assert.match(withWpt, /<wpt lat="50.001" lon="14.001">\s*<name>Café &lt;U Lípy&gt; &amp; spol.<\/name>\s*<type>Generic<\/type>/);
+assert.match(withWpt, /<wpt lat="50.002" lon="14.002">\s*<name>Bod 2<\/name>/);
+assert.equal((withWpt.match(/<wpt /g) || []).length, 2);
+assert.equal((withWpt.match(/<trkpt /g) || []).length, 4, "track unchanged");
+
 console.log("mapy-route: all tests passed");
 

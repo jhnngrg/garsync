@@ -6,6 +6,8 @@
  */
 (() => {
   const R = globalThis.GarSyncRoute;
+  // Features still in testing; only the GarSync TEST build switches them on.
+  const FLAGS = globalThis.GarSyncFlags || {};
   const I18N = globalThis.GarSyncI18n;
 
   // UI language (setting "auto" | "en" | "cs" from the toolbar panel). Starts
@@ -49,6 +51,7 @@
   const ICON_CLOSE =
     '<path d="M12 10.59 7.76 6.34a1 1 0 0 0-1.42 1.42L10.59 12l-4.25 4.24a1 1 0 1 0 1.42 1.42L12 13.41l4.24 4.25a1 1 0 0 0 1.42-1.42L13.41 12l4.25-4.24a1 1 0 0 0-1.42-1.42L12 10.59Z"/>';
   const ICON_CHECK = '<path d="M9.5 16.6 5.4 12.5 4 13.9l5.5 5.5L20 8.9l-1.4-1.4z"/>';
+  const ICON_FLAG = '<path d="M6 3h2v1h11l-2.5 4.5L19 13H8v8H6V3Zm2 3v5h7.6l-1.4-2.5L15.6 6H8Z"/>';
   const ICON_PERSON =
     '<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5Z"/>';
 
@@ -63,7 +66,7 @@
   // Items are 90px wide (mapy.com's .icon-action), so three fit per row.
   // To add another feature, add an entry to EXTRA_ACTIONS.
   const EXTRA_ACTIONS = [
-    { id: "garmin", label: "Garmin", title: () => t("sendToGarmin"), icon: ICON_WATCH, onClick: () => openDialog() },
+    { id: "garmin", label: FLAGS.buttonLabel || "Garmin", title: () => t("sendToGarmin"), icon: ICON_WATCH, onClick: () => openDialog() },
   ];
 
   const ROW_CSS = `
@@ -151,17 +154,40 @@
     return m / 1000;
   }
 
-  /** Returns { gpx, name, km, criterion } for the route on screen. */
+  /**
+   * The via points between start and end as [{ lat, lon, name }], for Course
+   * Points. Points picked from the map search keep their Mapy.com name; free
+   * map clicks are named like in the Mapy.com route panel ("Point 2", "Point 3"…).
+   */
+  function viaPoints(fromPage, fromUrl) {
+    let list = [];
+    if (fromPage?.points) {
+      list = fromPage.points.map((p) => {
+        const raw = p.geometry ? R.decodeCoords(p.geometry)[0] : null;
+        return raw ? { ...R.toWGS84(raw), name: p.source === "coor" ? "" : p.title } : null;
+      });
+    } else if (fromUrl?.points) {
+      list = fromUrl.points.map((raw) => ({ ...R.toWGS84(raw), name: "" })); // the URL carries no names
+    }
+    // Unnamed points get the label Mapy.com shows for them: their position in
+    // the whole list, start included ("Point 2" is the first via point).
+    return list
+      .map((p, i) => p && { ...p, name: (p.name || "").trim() || t("viaPointName", { n: i + 1 }) })
+      .slice(1, -1)
+      .filter(Boolean);
+  }
+
+  /** Returns { gpx, viaPoints, name, km, criterion } for the route on screen. */
   async function loadRoute() {
     const lang = (document.documentElement.lang || "en").slice(0, 2);
     const fromPage = await routeFromPage();
     let exportUrl;
     let criterion;
+    let fromUrl = null;
     if (fromPage) {
       exportUrl = R.buildExportUrlFromParams(fromPage.params, lang);
       criterion = fromPage.criterion;
     } else {
-      let fromUrl = null;
       try {
         fromUrl = R.parseRouteUrl(location.href);
       } catch {
@@ -183,6 +209,7 @@
     const gpxName = doc.querySelector("trk > name, rte > name, metadata > name")?.textContent?.trim();
     return {
       gpx: text,
+      viaPoints: viaPoints(fromPage, fromUrl),
       name: fromPage?.title || gpxName || t("defaultRouteName"),
       km: fromPage?.km ?? distanceKm(doc),
       criterion,
@@ -257,6 +284,28 @@
     .check svg { width: 16px; height: 16px; fill: #fff; visibility: hidden; }
     .device[aria-checked="true"] .check { background: #1eae00; border-color: #1eae00; }
     .device[aria-checked="true"] .check svg { visibility: visible; }
+    /* On/off switch (Course Points), so it reads differently from the device list. */
+    .switch {
+      position: relative; width: 36px; height: 20px; flex: none; border-radius: 10px;
+      background: rgba(1,30,57,.2); transition: background .15s ease;
+    }
+    .switch::after {
+      content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s ease;
+    }
+    [aria-checked="true"] > .switch { background: #1eae00; }
+    [aria-checked="true"] > .switch::after { transform: translateX(16px); }
+    .option {
+      display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 8px;
+      background: rgba(1,30,57,.04); cursor: pointer; user-select: none;
+    }
+    .option:hover { background: rgba(1,30,57,.07); }
+    .option:focus-visible { outline: 2px solid #1eae00; outline-offset: 2px; }
+    .option-icon { width: 24px; height: 24px; flex: none; fill: #1eae00; }
+    .option-text { flex: 1; min-width: 0; }
+    .option-name { font-size: 16px; color: #000; }
+    .option-sub { font-size: 13px; color: rgba(1,30,57,.6); }
+    @media (prefers-reduced-motion: reduce) { .switch, .switch::after { transition: none; } }
     .device:focus-visible, .chip:focus-visible, button:focus-visible { outline: 2px solid #1eae00; outline-offset: 2px; }
     .hint { margin: 8px 0 0; font-size: 13px; color: rgba(1,30,57,.6); }
     .notice { margin: 0 0 20px; padding: 10px 12px; border-radius: 8px; font-size: 14px; background: rgba(1,30,57,.06); color: rgba(1,30,57,.8); }
@@ -436,6 +485,8 @@
       el("p", { className: "label", textContent: t("sendToDevices") }),
       devicesBody,
     );
+    const pointsSection = el("div", { className: "section" });
+    pointsSection.hidden = true;
     const sendBtn = el("button", { className: "btn primary", type: "button", textContent: t("send"), disabled: true });
     const cancelBtn = el("button", { className: "btn secondary", type: "button", textContent: t("cancel") });
     const closeBtn = el("button", { className: "close", type: "button", ariaLabel: t("close") }, svg(ICON_CLOSE));
@@ -450,6 +501,7 @@
       notice,
       el("div", { className: "section" }, el("p", { className: "label" }, t("routeName"), el("span", { className: "required", textContent: " *", ariaHidden: "true" })), nameInput, nameError),
       el("div", { className: "section" }, el("p", { className: "label", textContent: t("sport") }), chips),
+      pointsSection,
       devicesSection,
       el("div", { className: "footer" }, cancelBtn, sendBtn),
     );
@@ -462,6 +514,39 @@
     let accountState = "loading";
     let busy = false;
     const selected = new Set();
+    let coursePointsChecked = true;
+    const coursePointsOn = () => Boolean(FLAGS.coursePoints && coursePointsChecked && route?.viaPoints?.length);
+
+    /** Optional: via points as Course Points (test build only). */
+    const renderPoints = () => {
+      const points = route?.viaPoints || [];
+      pointsSection.hidden = !FLAGS.coursePoints || !points.length;
+      if (pointsSection.hidden) return;
+      // A grey card like Mapy.com's own info boxes, so it does not read as
+      // one more entry of the device list below.
+      const row = el(
+        "div",
+        { className: "option" },
+        svg(ICON_FLAG, "option-icon"),
+        el(
+          "div",
+          { className: "option-text" },
+          el("div", { className: "option-name", textContent: t("coursePointsToggle", { n: points.length }) }),
+          el("div", { className: "option-sub", textContent: t("coursePointsHint") }),
+        ),
+        el("span", { className: "switch", ariaHidden: "true" }),
+      );
+      row.setAttribute("aria-checked", String(coursePointsChecked));
+      toggleable(row, {
+        role: "switch",
+        onToggle: () => {
+          coursePointsChecked = !coursePointsChecked;
+          row.setAttribute("aria-checked", String(coursePointsChecked));
+          storageSet({ coursePoints: coursePointsChecked }).catch(() => {});
+        },
+      });
+      pointsSection.replaceChildren(row);
+    };
 
     const renderChips = () => {
       chips.replaceChildren(
@@ -676,7 +761,7 @@
     cover.addEventListener("click", (e) => e.target === cover && close());
 
     /** Replaces the whole dialog with the confirmation. */
-    const showSuccess = (courseName, deviceNames, url) => {
+    const showSuccess = (courseName, deviceNames, url, extra) => {
       const okBtn = el("button", { className: "btn primary", type: "button", textContent: t("close") });
       okBtn.addEventListener("click", close);
       dialog.setAttribute("aria-label", t("routeSent"));
@@ -696,6 +781,7 @@
                 })
               : t("successSaved"),
           }),
+          extra ? el("p", { className: "success-text", textContent: extra }) : null,
           url ? el("a", { className: "success-link", href: url, target: "_blank", rel: "noopener", textContent: t("openInGarmin") }) : null,
           okBtn,
         ),
@@ -726,14 +812,16 @@
       setNotice("");
       try {
         const result = await send("uploadCourse", {
-          gpx: route.gpx,
+          gpx: coursePointsOn() ? R.addWaypoints(route.gpx, route.viaPoints) : route.gpx,
           filename: "mapy-com-route.gpx",
           name: courseName,
           activityTypePk: sport,
           deviceIds,
         });
         const names = devices.filter((d) => result.sentTo.includes(d.id)).map((d) => d.name);
-        showSuccess(result.courseName || courseName, names, result.url);
+        // The TEST build shows how many Course Points Garmin took over.
+        const extra = FLAGS.debug && coursePointsOn() ? t("coursePointsResult", { n: result.coursePoints ?? 0, sent: route.viaPoints.length }) : "";
+        showSuccess(result.courseName || courseName, names, result.url, extra);
         return;
       } catch (err) {
         if (err.code === "NOT_LOGGED_IN") {
@@ -766,6 +854,15 @@
       subtitle.textContent = t("routeFrom", { km: formatKm(route.km) });
       sport = R.garminSportFor(route.criterion);
       renderChips();
+      if (FLAGS.coursePoints) {
+        try {
+          const saved = await storageGet("coursePoints");
+          if (typeof saved === "boolean") coursePointsChecked = saved;
+        } catch {
+          /* keep the default */
+        }
+        renderPoints();
+      }
     } catch (err) {
       subtitle.textContent = t("routeLoadFailed");
       setNotice(errorText(err), "error");

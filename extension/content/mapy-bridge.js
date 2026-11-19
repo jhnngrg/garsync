@@ -43,6 +43,13 @@
       params: JSON.parse(JSON.stringify(e)),
       title: t.likeData?.usertitle || "",
       criterion: p.criterion,
+      // The clicked points (start, via points, end) with their names; the
+      // GPX export leaves them out. Free map clicks have source "coor".
+      points: t.items.map((a) => ({
+        geometry: a.geometry,
+        source: a.source || "",
+        title: a.usertitle || a.title || "",
+      })),
       km: typeof rd.totalLength === "number" ? rd.totalLength / 1000 : null,
     };
   }

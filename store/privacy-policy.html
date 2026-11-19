@@ -60,6 +60,7 @@
         <li>
           <strong>The Mapy.com route you have open.</strong> Its coordinates and name are downloaded as GPX through
           Mapy.com's export and, when you click Send, uploaded to your Garmin Connect account as a private course.
+          If the waypoints switch is on, the positions and names of the route's waypoints are added as Course Points.
         </li>
         <li>
           <strong>Your Garmin Connect display name.</strong> Shown in the dialog only, so you can see which account is
@@ -69,9 +70,9 @@
           <strong>Your list of Garmin devices.</strong> Loaded so you can choose where to send the course.
         </li>
         <li>
-          <strong>Your device selection.</strong> The IDs of the devices you selected last time are stored locally in
-          the browser (<code>chrome.storage.local</code>) so the dialog can pre-select them. They are removed when you
-          uninstall the extension.
+          <strong>Your settings.</strong> The IDs of the devices you selected last time, the waypoints switch and the
+          language are stored locally in the browser (<code>chrome.storage.local</code>) so the dialog can pre-select
+          them. They are removed when you uninstall the extension.
         </li>
       </ul>
 
@@ -92,7 +93,7 @@
 
       <h2>Permissions</h2>
       <ul>
-        <li><code>storage</code> – remembers your device selection.</li>
+        <li><code>storage</code> – remembers your device selection, the waypoints switch and the language.</li>
         <li><code>mapy.com</code>, <code>mapy.cz</code> – adds the Garmin button to the route panel and reads the open route.</li>
         <li><code>connect.garmin.com</code> – uploads the course to your account and loads your name and devices.</li>
         <li><code>sso.garmin.com</code> – recognises Garmin's sign-in page, so the extension can tell you when you are signed out. Nothing on that page is read or filled in.</li>

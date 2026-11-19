@@ -1,7 +1,16 @@
-# Chrome Web Store – submission kit for GarSync 1.0.1
+# Chrome Web Store – submission kit for GarSync 1.0.2
 
 Everything you fill in on the [Developer Dashboard](https://chrome.google.com/webstore/devconsole), in tab order. Texts are ready to copy.
 The privacy policy is served by GitHub Pages from this repository.
+
+## What's new in 1.0.2
+
+Release notes, ready to copy where the store asks for them:
+```
+• Waypoints of the Mapy.com route can now be added to the Garmin course as Course Points (switch in the send dialog). Unnamed points keep the label Mapy.com shows, e.g. "Point 5".
+• The toolbar panel fits without scrolling; the language switch moved to its header.
+• Clearer text about courses saved without a device.
+```
 
 ---
 
@@ -10,13 +19,13 @@ The privacy policy is served by GitHub Pages from this repository.
 - [ ] Developer account registered, USD 5 fee paid, 2-Step Verification turned on.
 - [ ] Trader / non-trader declaration (EU) filled in under account settings.
 - [ ] Privacy policy is live at https://jhnngrg.github.io/garsync/store/privacy-policy.html (GitHub Pages).
-- [ ] Package built with `./store/build.sh` (creates `dist/garsync-chrome-1.0.1.zip`).
+- [ ] Package built with `./store/build.sh` (creates `dist/garsync-chrome-1.0.2.zip`).
 
 ---
 
 ## 1. Package
 
-Upload `dist/garsync-chrome-1.0.1.zip`.
+Upload `dist/garsync-chrome-1.0.2.zip`.
 
 ---
 
@@ -48,6 +57,7 @@ FEATURES
 • Pre-selects the sport from the Mapy.com route type (hiking, walking, cycling, mountain biking, road cycling…).
 • Works with new, saved and shared routes from the Mapy.com route planner.
 • Shows which Garmin Connect account is connected and offers sign-in when needed.
+• Adds the waypoints of your Mapy.com route as Course Points, so your device announces them on the way (can be switched off).
 • Remembers your devices, so next time you just click Send.
 • Available in English and Czech (switch in the toolbar panel).
 • The toolbar icon opens a small panel with a quick how-to and a link to Mapy.com.
@@ -57,7 +67,7 @@ REQUIREMENTS
 • A Garmin device that supports courses and is paired with Garmin Connect.
 
 PRIVACY
-GarSync has no server of its own. The route goes straight from your browser to your own Garmin Connect account. Nothing is collected, sold or shared with third parties. Apart from your device selection, nothing is stored.
+GarSync has no server of its own. The route goes straight from your browser to your own Garmin Connect account. Nothing is collected, sold or shared with third parties. Apart from your settings, nothing is stored.
 
 DISCLAIMER
 GarSync is an unofficial add-on, not made or endorsed by Garmin Ltd. or Seznam.cz, a.s. Garmin and Garmin Connect are trademarks of Garmin Ltd. or its subsidiaries. Mapy.com is a trademark of Seznam.cz, a.s. The extension relies on the Garmin Connect and Mapy.com websites, which may change without notice.
@@ -98,7 +108,7 @@ Sends a route planned on Mapy.com to the user's own Garmin Connect account and q
 
 **storage**
 ```
-Remembers which Garmin devices the user selected last time, so the send dialog can pre-select them. Stored locally in the browser only.
+Remembers which Garmin devices the user selected last time, whether waypoints are added as Course Points, and the UI language, so the send dialog can pre-select them. Stored locally in the browser only.
 ```
 
 **declarativeNetRequestWithHostAccess**

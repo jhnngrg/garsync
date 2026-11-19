@@ -1,6 +1,15 @@
-# Firefox Add-ons (AMO) – submission kit for GarSync 1.0.1
+# Firefox Add-ons (AMO) – submission kit for GarSync 1.0.2
 
 Step by step for [addons.mozilla.org](https://addons.mozilla.org/developers/) (AMO). Texts are ready to copy.
+
+## What's new in 1.0.2
+
+Release notes, ready to copy where the store asks for them:
+```
+• Waypoints of the Mapy.com route can now be added to the Garmin course as Course Points (switch in the send dialog). Unnamed points keep the label Mapy.com shows, e.g. "Point 5".
+• The toolbar panel fits without scrolling; the language switch moved to its header.
+• Clearer text about courses saved without a device.
+```
 
 ---
 
@@ -10,7 +19,7 @@ Step by step for [addons.mozilla.org](https://addons.mozilla.org/developers/) (A
    ```bash
    ./store/build.sh
    ```
-   You get `dist/garsync-firefox-1.0.1.zip` (for AMO) and an unpacked copy in `dist/firefox/`.
+   You get `dist/garsync-firefox-1.0.2.zip` (for AMO) and an unpacked copy in `dist/firefox/`.
 2. Test in Firefox (140 or newer):
    1. Open `about:debugging#/runtime/this-firefox`.
    2. Click **Load Temporary Add-on…** and pick `dist/firefox/manifest.json`.
@@ -37,7 +46,7 @@ Step by step for [addons.mozilla.org](https://addons.mozilla.org/developers/) (A
 
 1. In the Developer Hub click **Submit a New Add-on**.
 2. **How to distribute this version:** choose **On this site** (listed on addons.mozilla.org).
-3. **Upload Version:** upload `dist/garsync-firefox-1.0.1.zip`.
+3. **Upload Version:** upload `dist/garsync-firefox-1.0.2.zip`.
    - Compatible platforms: **Firefox for desktop** only (leave Android unchecked).
    - AMO runs automatic validation. Warnings are fine; errors must be fixed before you can continue.
 4. **Source code:** answer **No**. The code is not minified, bundled or transpiled, so reviewers can read the package as it is.
@@ -79,6 +88,7 @@ FEATURES
 • Pre-selects the sport from the Mapy.com route type (hiking, walking, cycling, mountain biking, road cycling…).
 • Works with new, saved and shared routes from the Mapy.com route planner.
 • Shows which Garmin Connect account is connected and offers sign-in when needed.
+• Adds the waypoints of your Mapy.com route as Course Points, so your device announces them on the way (can be switched off).
 • Remembers your devices, so next time you just click Send.
 • Available in English and Czech (switch in the toolbar panel).
 
@@ -87,7 +97,7 @@ REQUIREMENTS
 • A Garmin device that supports courses and is paired with Garmin Connect.
 
 PRIVACY
-GarSync has no server of its own. The route goes straight from your browser to your own Garmin Connect account. Nothing is collected by the developer, sold or shared with anyone else. Apart from your device selection, nothing is stored.
+GarSync has no server of its own. The route goes straight from your browser to your own Garmin Connect account. Nothing is collected by the developer, sold or shared with anyone else. Apart from your settings, nothing is stored.
 
 DISCLAIMER
 GarSync is an unofficial add-on, not made or endorsed by Garmin Ltd. or Seznam.cz, a.s. Garmin and Garmin Connect are trademarks of Garmin Ltd. or its subsidiaries. Mapy.com is a trademark of Seznam.cz, a.s.
@@ -109,10 +119,10 @@ AMO asks for the privacy policy as text. Choose **This add-on has a privacy poli
 GarSync has no server of its own and sends no data to its developer. It never sells or shares data with third parties and does not use it for advertising or analytics.
 
 What it works with:
-- The Mapy.com route you have open (coordinates and name). When you click Send, it is uploaded to your own Garmin Connect account as a private course.
+- The Mapy.com route you have open (coordinates, name and waypoints). When you click Send, it is uploaded to your own Garmin Connect account as a private course; waypoints become Course Points if the switch is on.
 - Your Garmin Connect display name, shown in the dialog only and never stored.
 - Your list of Garmin devices, so you can choose where to send the course.
-- Your device selection, stored locally in the browser and removed when you uninstall the add-on.
+- Your settings (device selection, waypoints switch, language), stored locally in the browser and removed when you uninstall the add-on.
 
 Sign-in: GarSync never sees or stores your password. Requests to Garmin Connect use the session you already have in your browser.
 
